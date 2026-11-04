@@ -1,0 +1,35 @@
+# Playbook Task 2 (по статье How To Write Ansible Playbooks).
+# Устанавливает пакеты (tree, htop) и размещает файл-приветствие.
+# Запуск: ansible-playbook -i inventory.ini setup.yaml
+---
+# Плей 1: инсталляция пакетов на узлах группы nodes.
+- name: Install packages on nodes
+  hosts: nodes
+  become: true
+  tasks:
+    # Актуализируем индекс пакетов (аналог apt-get update).
+    - name: Refresh apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    # tree — визуализация дерева каталогов, htop — мониторинг процессов.
+    - name: Install tree and htop
+      ansible.builtin.apt:
+        name:
+          - tree
+          - htop
+        state: present
+
+# Плей 2: раскладка конфигурационного файла на узлы.
+- name: Distribute welcome message
+  hosts: nodes
+  become: true
+  tasks:
+    # Записываем текст в /etc/motd.custom (модуль copy).
+    - name: Create custom motd
+      ansible.builtin.copy:
+        dest: /etc/motd.custom
+        content: |
+          Lab 5, Task 2 — node configured by Ansible.
+        mode: "0644"

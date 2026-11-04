@@ -1,0 +1,15 @@
+# Service шлюза: единая точка входа к приложению снаружи.
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway # имя сервиса
+spec:
+  type: NodePort # тип: доступ снаружи через порт ноды
+  selector:
+    app: warden # отбор обслуживаемых подов
+    tier: gateway
+  ports:
+    - name: http # условное имя порта
+      port: 80 # порт сервиса
+      targetPort: 80 # порт контейнера nginx
+      # конкретный nodePort Kubernetes подберёт сам из 30000-32767

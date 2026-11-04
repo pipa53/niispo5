@@ -1,0 +1,34 @@
+# Deployment шлюза (nginx) перед приложением.
+# Размещается на первой воркер-ноде вместе с приложением.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway # имя развёртывания
+spec:
+  replicas: 1 # одного экземпляра прокси достаточно
+  selector:
+    matchLabels:
+      app: warden
+      tier: gateway
+  template:
+    metadata:
+      labels:
+        app: warden
+        tier: gateway
+    spec:
+      # Шлюз — на первую воркер-ноду, рядом с приложением.
+      nodeSelector:
+        kubernetes.io/hostname: k8s-lab-worker
+      containers:
+        - name: nginx
+          image: nginx:alpine # официальный образ, конфиг берётся из ConfigMap
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: gateway-conf # подключаемый том (см. volumes)
+              mountPath: /etc/nginx/conf.d # каталог для конфигов nginx
+              readOnly: true # конфиг только читаем
+      volumes:
+        - name: gateway-conf # имя тома на уровне пода
+          configMap:
+            name: gateway-conf # имя ConfigMap с файлами

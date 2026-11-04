@@ -1,0 +1,21 @@
+# Job миграций Liquibase (аналог одноразового контейнера из ЛР1).
+# Применяет changelog к базе и завершается; приложение стартует после успеха.
+apiVersion: batch/v1
+kind: Job # разовая задача, выполняемая до завершения
+metadata:
+  name: migrator # имя задачи
+spec:
+  template:
+    metadata:
+      labels:
+        app: warden
+        tier: migrator
+    spec:
+      # Пока миграции не применены, контейнер перезапускается.
+      restartPolicy: OnFailure
+      containers:
+        - name: liquibase
+          # Образ собирается из каталога Lab 1 / task5 / liquibase.
+          image: warden-migrator:lab5
+          # Та же команда, что использовалась в compose-файле ЛР1.
+          args: ["--defaults-file=/liquibase/changelog/liquibase.properties", "update"]

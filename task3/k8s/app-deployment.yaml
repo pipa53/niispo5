@@ -1,0 +1,39 @@
+# Deployment приложения «Учёт надзирателей» из ЛР1.
+# Размещается на первой воркер-ноде вместе с шлюзом.
+apiVersion: apps/v1
+kind: Deployment # набор реплик с возможностью rolling update
+metadata:
+  name: api # имя развёртывания
+spec:
+  replicas: 2 # два экземпляра приложения
+  selector:
+    matchLabels:
+      app: warden # отбор подов по метке
+      tier: api
+  template:
+    metadata:
+      labels:
+        app: warden # метка обязана совпадать с selector
+        tier: api
+    spec:
+      # Приложение — на первую воркер-ноду, рядом с шлюзом.
+      nodeSelector:
+        kubernetes.io/hostname: k8s-lab-worker
+      containers:
+        - name: api # имя контейнера
+          # Образ собирается из каталога Lab 1 / task5 / app.
+          image: warden-api:lab5
+          ports:
+            - containerPort: 8000 # порт uvicorn
+          env:
+            # Подключение к базе через Service postgres (кластерный DNS).
+            - name: API_DB_HOST
+              value: postgres
+            - name: API_DB_PORT
+              value: "5432"
+            - name: API_DB_NAME
+              value: api
+            - name: API_DB_USER
+              value: apiuser
+            - name: API_DB_PASS
+              value: apipass

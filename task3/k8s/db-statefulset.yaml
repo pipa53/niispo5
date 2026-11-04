@@ -1,0 +1,48 @@
+# StatefulSet с PostgreSQL (пример из гл. 17 книги).
+# База размещается на второй воркер-ноде, данные лежат на отдельном томе.
+apiVersion: apps/v1
+kind: StatefulSet # упорядоченные поды, у каждого свой том
+metadata:
+  name: postgres # имя набора
+spec:
+  serviceName: postgres # имя сервиса для стабильной сетевой идентичности
+  replicas: 1 # экземпляр базы
+  selector:
+    matchLabels:
+      app: warden # отбор подов по метке
+      tier: postgres
+  template:
+    metadata:
+      labels:
+        app: warden # метка обязана совпадать с selector
+        tier: postgres
+    spec:
+      # База — на второй воркер-ноде (отдельно от приложения и шлюза).
+      nodeSelector:
+        kubernetes.io/hostname: k8s-lab-worker2
+      containers:
+        - name: postgres # имя контейнера
+          image: postgres:16.2-alpine # образ СУБД
+          ports:
+            - containerPort: 5432 # порт PostgreSQL
+          env:
+            # Учётные данные из ЛР1 (учебные, только для локального стенда).
+            - name: POSTGRES_PASSWORD
+              value: apipass
+            - name: POSTGRES_DB
+              value: api
+            - name: POSTGRES_USER
+              value: apiuser
+          volumeMounts:
+            - name: dbdata # подключаемый том (см. volumeClaimTemplates)
+              mountPath: /var/lib/postgresql/data # каталог, куда СУБД пишет данные
+  # Шаблон PVC: каждому поду выдаётся собственный том.
+  volumeClaimTemplates:
+    - metadata:
+        name: dbdata # имя тома на уровне пода
+      spec:
+        accessModes:
+          - ReadWriteOnce # монтирование на запись только с одной ноды
+        resources:
+          requests:
+            storage: 1Gi # запрашиваемый объём
